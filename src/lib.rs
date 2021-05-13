@@ -1,7 +1,7 @@
-use rusty_leveldb::{Options, DB, WriteBatch};
+use rusty_leveldb::{Options, WriteBatch, DB};
+use std::ffi::CStr;
 use std::os::raw::{c_char, c_uchar};
 use std::ptr;
-use std::ffi::{CStr};
 
 /// Creates a [`&str`] from c_string.
 /// - Creates a [`&str`] from c_string
@@ -20,17 +20,17 @@ use std::ffi::{CStr};
 ///
 macro_rules! cstr {
     ($ptr:expr) => {
-       cstr!($ptr,"default")
+        cstr!($ptr, "default")
     };
     ($ptr:expr,$default:expr) => {
-       if ($ptr as *const c_char).is_null(){
-           $default
-       } else{
-           match unsafe { CStr::from_ptr($ptr as *const c_char).to_str() }{
-            Ok(value) => value,
-            Err(_) => $default
-           }
-       }
+        if ($ptr as *const c_char).is_null() {
+            $default
+        } else {
+            match unsafe { CStr::from_ptr($ptr as *const c_char).to_str() } {
+                Ok(value) => value,
+                Err(_) => $default,
+            }
+        }
     };
 }
 /// get [`&[u8]`] from KvBuffer pointer.
@@ -46,46 +46,45 @@ macro_rules! buffer {
 /// get [`DB`] from FlKv pointer.
 macro_rules! db {
     ($ptr:expr) => {{
-       db!($ptr,false)
+        db!($ptr, false)
     }};
     ($ptr:expr,$rt:expr) => {{
-      if ($ptr as *mut FlKv).is_null() {
-        return $rt;
-      } else {
-       let kv= unsafe { &mut *$ptr };
-       &mut kv.db
-      }
+        if ($ptr as *mut FlKv).is_null() {
+            return $rt;
+        } else {
+            let kv = unsafe { &mut *$ptr };
+            &mut kv.db
+        }
     }};
 }
 /// get [`WriteBatch`] from FlKvBatch pointer.
 macro_rules! wbr {
     ($ptr:expr) => {{
-       wbr!($ptr,false)
+        wbr!($ptr, false)
     }};
     ($ptr:expr,$rt:expr) => {{
-      if ($ptr as *mut FlKvBatch).is_null() {
-        return $rt;
-      } else {
-       let kv = unsafe { Box::from_raw($ptr as *mut FlKvBatch) };
-       kv.wb
-      }
+        if ($ptr as *mut FlKvBatch).is_null() {
+            return $rt;
+        } else {
+            let kv = unsafe { Box::from_raw($ptr as *mut FlKvBatch) };
+            kv.wb
+        }
     }};
 }
 /// get  [`WriteBatch`]  refrence from FlKvBatch pointer.
 macro_rules! wb {
     ($ptr:expr) => {{
-       wb!($ptr,false)
+        wb!($ptr, false)
     }};
     ($ptr:expr,$rt:expr) => {{
-      if ($ptr as *mut FlKvBatch).is_null() {
-        return $rt;
-      } else {
-       let kv = unsafe { &mut *$ptr };
-       &mut kv.wb
-      }
+        if ($ptr as *mut FlKvBatch).is_null() {
+            return $rt;
+        } else {
+            let kv = unsafe { &mut *$ptr };
+            &mut kv.wb
+        }
     }};
 }
-
 
 /// Array struct
 #[repr(C)]
@@ -120,7 +119,6 @@ pub struct FlKv {
 pub struct FlKvBatch {
     wb: WriteBatch,
 }
-
 
 #[no_mangle]
 pub extern "C" fn db_open(name: *const c_char, memory: bool) -> *mut FlKv {
@@ -162,12 +160,16 @@ pub extern "C" fn db_put(flkv: *mut FlKv, key: *mut KvBuffer, value: *mut KvBuff
 #[no_mangle]
 pub extern "C" fn db_create_batch() -> *mut FlKvBatch {
     Box::into_raw(Box::new(FlKvBatch {
-        wb: WriteBatch::new()
+        wb: WriteBatch::new(),
     }))
 }
 
 #[no_mangle]
-pub extern "C" fn batch_add_kv(batch: *mut FlKvBatch, key: *mut KvBuffer, value: *mut KvBuffer) -> bool {
+pub extern "C" fn batch_add_kv(
+    batch: *mut FlKvBatch,
+    key: *mut KvBuffer,
+    value: *mut KvBuffer,
+) -> bool {
     let wb = wb!(batch);
     wb.put(buffer!(key), buffer!(value));
     true
@@ -195,10 +197,10 @@ pub extern "C" fn db_put_batch(flkv: *mut FlKv, batch: *mut FlKvBatch, sync: boo
 
 #[no_mangle]
 pub extern "C" fn db_get(flkv: *mut FlKv, key: *mut KvBuffer) -> *mut KvBuffer {
-    let db = db!(flkv,ptr::null_mut());
+    let db = db!(flkv, ptr::null_mut());
     match db.get(buffer!(key)) {
         Some(data) => KvBuffer::from_vec(data),
-        None => KvBuffer::empty()
+        None => KvBuffer::empty(),
     }
 }
 
@@ -236,7 +238,7 @@ pub extern "C" fn db_close(flkv: *mut FlKv) {
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::{CString, CStr};
+    use std::ffi::{CStr, CString};
     use std::os::raw::c_char;
     use std::ptr;
 
@@ -248,7 +250,7 @@ mod tests {
         assert_eq!("aaaa", str);
         let str_with_default = cstr!(ptr::null());
         assert_eq!("default", str_with_default);
-        let str_with_custom = cstr!(ptr::null(),"custom");
+        let str_with_custom = cstr!(ptr::null(), "custom");
         assert_eq!("custom", str_with_custom);
     }
 }
