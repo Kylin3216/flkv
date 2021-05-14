@@ -1,7 +1,6 @@
 name: flkv
-description: flutter leveldb
+description: flutter leveldb, with dart bindings to rust rusty_leveldb which is similar to google's leveldb
 version: 0.0.1
-author: iceKylin
 homepage: https://github.com/Kylin3216/flkv.git
 
 environment:

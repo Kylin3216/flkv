@@ -11,13 +11,26 @@ LIB_OUT_DIR = "release"
 [tasks.build]
 description = "Runs the rust compiler."
 category = "Build"
-dependencies = ["android", "ios","ffi"]
+dependencies = ["android", "ios", "ffi"]
 
 [tasks.ffi]
 description = "generate dart ffi"
 category = "Build"
 command = "flutter"
-args = ["pub","run","ffigen"]
+args = ["pub", "run", "ffigen"]
+
+[tasks.pre-publish]
+description = "publish --dry-run"
+category = "Build"
+command = "flutter"
+args = ["pub", "publish", "--dry-run"]
+
+[tasks.publish]
+description = "publish to pub"
+category = "Build"
+command = "flutter"
+args = ["pub", "publish", "--server=https://pub.dartlang.org"]
+dependencies = ["pre-publish"]
 
 [tasks.ios]
 description = "build iOS targets"
